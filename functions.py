@@ -6,7 +6,7 @@ import settings
 
 # Método para efetuar GET com cURL
 def api_get(action):
-    conn = http.client.HTTPConnection(settings.endpoint)
+    conn = http.client.HTTPConnection(settings.endpoint, timeout=120)
 
     headers = {
         'content-type': "application/json",
@@ -22,7 +22,7 @@ def api_get(action):
 
 # Método para efetuar PUT com cURL
 def api_put(action, params):
-    conn = http.client.HTTPConnection(settings.endpoint)
+    conn = http.client.HTTPConnection(settings.endpoint, timeout=120)
 
     payload = json.dumps(params, ensure_ascii=False)
 

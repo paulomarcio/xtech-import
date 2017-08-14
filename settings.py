@@ -12,8 +12,9 @@ db_host = "127.0.0.1"
 db_user = "root"
 db_password = "root"
 db_name = "toyboy"
-db_per_page = 50
-db_pages = 26
+db_products = 1290
+db_per_page = 2
+db_start_page = 1
 
 # S3 Settings
 s3_bucket_url = 'https://s3-sa-east-1.amazonaws.com/toyboy'
