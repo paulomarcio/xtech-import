@@ -10,10 +10,10 @@ app_key = "TH4GEnAtreStutHU6h73UxaDrayUyA"
 # Local database settings
 db_host = "127.0.0.1"
 db_user = "root"
-db_password = "root"
+db_password = "q1w2e3r4"
 db_name = "toyboy"
 db_products = 1290
-db_per_page = 2
+db_per_page = 50
 db_start_page = 1
 
 # S3 Settings
