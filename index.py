@@ -2,6 +2,8 @@ import functions
 import settings
 import csv
 import sys
+import base64
+import requests
 from time import sleep
 from datetime import datetime
 
@@ -37,9 +39,13 @@ class Xtech:
                         for image in images:
                             imagens.append("%s/assets/images/produtos/%s/detalhe/%s" % (settings.s3_bucket_url, item[0], image[3]))
 
-                        params = {"product": {"name": "%s" % produto['name'], "sku": "%s" % produto['sku'],
-                                  "description": "%s" % produto['description'], "price": produto['price'],
-                                              "saleprice": produto['saleprice'], "images": imagens}}
+                        params = {"product": {"name": "%s" % str(item[13]).encode('utf-8'),
+                                              "sku": "%s" % produto['sku'],
+                                              "description": "%s" % str(item[15]).encode('utf-8'),
+                                              "excerpt": "%s" % str(item[15]).encode('utf-8'),
+                                              "price": produto['price'],
+                                              "saleprice": produto['saleprice'],
+                                              "images": imagens}}
 
                         print("Atualizando as imagens do produto SKU[%s]" % produto['sku'])
                         # Chamada da API para atualizar o produto na Xtech inserindo suas imagens
@@ -71,6 +77,50 @@ class Xtech:
         print("Processo finalizado em %s/%s/%s as %s:%s:%s" % (self.now.day, self.now.month, self.now.year, self.now.hour, self.now.minute, self.now.second))
         print("Lista de produtos que deram falha no upload de imagens:")
         print(self.falhas)
+
+    def update_from_api_base64(self):
+
+        # Aqui eu listo todos os produtos obtidos na Xtech
+        print("Processo iniciado em %s/%s/%s as %s:%s:%s" % (self.now.day, self.now.month, self.now.year, self.now.hour, self.now.minute, self.now.second))
+
+        while self.page <= self.pages:
+            try:
+                print("Atualizando os %s produtos da página %s ..." % (settings.db_per_page, self.page))
+
+                # Chamada da API da Xtech para listar os produtos da página atual
+                url = "/api-v1/products?per_page=%s&page=%s" % (settings.db_per_page, self.page)
+                produtos = functions.api_get(url)
+
+                for produto in produtos:
+                    try:
+                        item = functions.get_produto(produto['sku'])
+                        images = functions.get_imagens_produto(item[0])
+                        imagens = []
+                        for image in images:
+                            url = "%s/assets/images/produtos/%s/detalhe/%s" % (settings.s3_bucket_url, item[0], image[3])
+                            data = "data:image/png;base64," + str(base64.b64encode(requests.get(url).content))
+                            imagens.append(data)
+
+                        params = {"product": {"name": "%s" % str(item[13]).encode('utf-8'),
+                                              "sku": "%s" % produto['sku'],
+                                              "description": "%s" % str(item[15]).encode('utf-8'),
+                                              "excerpt": "%s" % str(item[15]).encode('utf-8'),
+                                              "price": produto['price'],
+                                              "saleprice": produto['saleprice'],
+                                              "images_base64": imagens}}
+
+                        print("Atualizando as imagens do produto SKU[%s]" % produto['sku'])
+
+                        # Chamada da API para atualizar o produto na Xtech inserindo suas imagens
+                        response = functions.api_put("/api-v1/products?id=%s" % produto['id'], params)
+                    except:
+                        print(sys.exc_info()[0])
+
+                self.page += 1
+
+            except:
+                print(sys.exc_info()[0])
+                break
 
     def get_products_from_api(self):
 
@@ -125,5 +175,7 @@ class Xtech:
 
 
 xtech = Xtech()
-xtech.get_products_from_api()
-xtech.update_from_csv()
+xtech.update_from_api()
+#xtech.update_from_api_base64()
+#xtech.get_products_from_api()
+#xtech.update_from_csv()

@@ -10,11 +10,13 @@ app_key = "TH4GEnAtreStutHU6h73UxaDrayUyA"
 # Local database settings
 db_host = "127.0.0.1"
 db_user = "root"
-db_password = "q1w2e3r4"
+db_password = "root"
 db_name = "toyboy"
 db_products = 1290
-db_per_page = 50
+db_per_page = 4
 db_start_page = 1
 
 # S3 Settings
 s3_bucket_url = 'https://s3-sa-east-1.amazonaws.com/toyboy'
+s3_bucket_name = 'toyboy'
+s3_bucket_key = 'AKIAJZ36H3UDZWOOWC2Q'
