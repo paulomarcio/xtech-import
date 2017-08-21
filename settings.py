@@ -12,8 +12,8 @@ db_host = "127.0.0.1"
 db_user = "root"
 db_password = "root"
 db_name = "toyboy"
-db_products = 1290
-db_per_page = 4
+db_products = 3210
+db_per_page = 2
 db_start_page = 1
 
 # S3 Settings

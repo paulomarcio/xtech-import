@@ -11,7 +11,7 @@ from datetime import datetime
 class Xtech:
 
     def __init__(self):
-        self.page = 1
+        self.page = 646
         self.pages = int(settings.db_products / settings.db_per_page)
         self.now = datetime.now()
         self.tentativas = 1
@@ -39,10 +39,10 @@ class Xtech:
                         for image in images:
                             imagens.append("%s/assets/images/produtos/%s/detalhe/%s" % (settings.s3_bucket_url, item[0], image[3]))
 
-                        params = {"product": {"name": "%s" % str(item[13]).encode('utf-8'),
+                        params = {"product": {"name": "%s" % item[13],
                                               "sku": "%s" % produto['sku'],
-                                              "description": "%s" % str(item[15]).encode('utf-8'),
-                                              "excerpt": "%s" % str(item[15]).encode('utf-8'),
+                                              "description": "%s" % item[15],
+                                              "excerpt": "%s" % item[15],
                                               "price": produto['price'],
                                               "saleprice": produto['saleprice'],
                                               "images": imagens}}
@@ -50,6 +50,7 @@ class Xtech:
                         print("Atualizando as imagens do produto SKU[%s]" % produto['sku'])
                         # Chamada da API para atualizar o produto na Xtech inserindo suas imagens
                         response = functions.api_put("/api-v1/products?id=%s" % produto['id'], params)
+                        sleep(2)
                     except:
                         print("Ocorreu um erro ao tentar atualizar o produto SKU[%s]" % produto['sku'])
                         print("Tentativas executadas: %s" % self.tentativas)

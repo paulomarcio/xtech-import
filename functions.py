@@ -24,7 +24,7 @@ def api_get(action):
 def api_put(action, params):
     conn = http.client.HTTPConnection(settings.endpoint, timeout=120)
 
-    payload = json.dumps(params, ensure_ascii=False)
+    payload = json.dumps(params, ensure_ascii=False).encode('utf-8')
 
     headers = {
         'content-type': "application/json",
