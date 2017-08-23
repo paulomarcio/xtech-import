@@ -2,8 +2,6 @@ import functions
 import settings
 import csv
 import sys
-import base64
-import requests
 from time import sleep
 from datetime import datetime
 
@@ -11,7 +9,7 @@ from datetime import datetime
 class Xtech:
 
     def __init__(self):
-        self.page = 646
+        self.page = 1
         self.pages = int(settings.db_products / settings.db_per_page)
         self.now = datetime.now()
         self.tentativas = 1
@@ -79,50 +77,6 @@ class Xtech:
         print("Lista de produtos que deram falha no upload de imagens:")
         print(self.falhas)
 
-    def update_from_api_base64(self):
-
-        # Aqui eu listo todos os produtos obtidos na Xtech
-        print("Processo iniciado em %s/%s/%s as %s:%s:%s" % (self.now.day, self.now.month, self.now.year, self.now.hour, self.now.minute, self.now.second))
-
-        while self.page <= self.pages:
-            try:
-                print("Atualizando os %s produtos da página %s ..." % (settings.db_per_page, self.page))
-
-                # Chamada da API da Xtech para listar os produtos da página atual
-                url = "/api-v1/products?per_page=%s&page=%s" % (settings.db_per_page, self.page)
-                produtos = functions.api_get(url)
-
-                for produto in produtos:
-                    try:
-                        item = functions.get_produto(produto['sku'])
-                        images = functions.get_imagens_produto(item[0])
-                        imagens = []
-                        for image in images:
-                            url = "%s/assets/images/produtos/%s/detalhe/%s" % (settings.s3_bucket_url, item[0], image[3])
-                            data = "data:image/png;base64," + str(base64.b64encode(requests.get(url).content))
-                            imagens.append(data)
-
-                        params = {"product": {"name": "%s" % str(item[13]).encode('utf-8'),
-                                              "sku": "%s" % produto['sku'],
-                                              "description": "%s" % str(item[15]).encode('utf-8'),
-                                              "excerpt": "%s" % str(item[15]).encode('utf-8'),
-                                              "price": produto['price'],
-                                              "saleprice": produto['saleprice'],
-                                              "images_base64": imagens}}
-
-                        print("Atualizando as imagens do produto SKU[%s]" % produto['sku'])
-
-                        # Chamada da API para atualizar o produto na Xtech inserindo suas imagens
-                        response = functions.api_put("/api-v1/products?id=%s" % produto['id'], params)
-                    except:
-                        print(sys.exc_info()[0])
-
-                self.page += 1
-
-            except:
-                print(sys.exc_info()[0])
-                break
-
     def get_products_from_api(self):
 
         # Aqui eu listo todos os produtos obtidos na Xtech
@@ -174,9 +128,127 @@ class Xtech:
         finally:
             f.close()
 
+    def update_products_categories(self):
+    
+        # Aqui eu listo todos os produtos obtidos na Xtech
+        print("Processo iniciado em %s/%s/%s as %s:%s:%s" % (self.now.day, self.now.month, self.now.year, self.now.hour,
+                                                             self.now.minute, self.now.second))
+        
+        while self.page <= self.pages:
+            try:
+                print("Atualizando os %s produtos da página %s ..." % (settings.db_per_page, self.page))
+                # Chamada da API da Xtech para listar os produtos da página atual
+                url = "/api-v1/products?per_page=%s&page=%s" % (settings.db_per_page, self.page)
+                produtos = functions.api_get(url)
 
+                for produto in produtos:
+                    try:
+                        item = functions.get_produto(produto['sku'])
+                        categories = []
+                        
+                        # De / Para com as Faixas Etárias do site antigo
+                        faixas = {
+                            17: 521425,
+                            3: 521426,
+                            2: 521427,
+                            10: 521429,
+                            23: 521429,
+                            13: 523248,
+                            9: 523249,
+                            22: 523251,
+                            20: 523255
+                        }
+
+                        # De / Para com os Gêneros do site antigo
+                        generos = {
+                            11: 523256,
+                            10: 523257
+                        }
+
+                        # De / Para com as Marcas do site antigo
+                        marcas = {
+                            768: 523261,
+                            797: 523263,
+                            802: 523265,
+                            294: 523266,
+                            295: 523267,
+                            809: 523269,
+                            810: 523270,
+                            556: 523272,
+                            571: 523273,
+                            318: 523274,
+                            846: 523275,
+                            345: 523277,
+                            445: 523278,
+                            720: 523279,
+                            467: 523282,
+                            753: 523283,
+                            245: 523284,
+                            228: 523286,
+                            270: 523287,
+                            261: 523288,
+                            286: 523289,
+                            229: 523290,
+                            236: 523291,
+                            238: 523293,
+                            351: 523294,
+                            271: 523296,
+                            314: 523298,
+                            275: 523299,
+                            307: 523300,
+                            300: 523301
+                        }
+
+                        # Adicionando as Marcas como Categoria
+                        if item[7] in marcas:
+                            categories.append(int(marcas[item[7]]))
+
+                        # Adicionando as Faixas Etárias como Categoria
+                        if item[6] in faixas:
+                            categories.append(int(faixas[item[6]]))
+
+                        # Adicionando os Gêneros como Categoria
+                        if item[5] in generos:
+                            categories.append(int(faixas[item[5]]))
+
+                        # Se for Unissex adiciono ambos os Gêneros
+                        if item[5] == 9:
+                            categories.append(523256)
+                            categories.append(523257)
+
+                        # Listando as categorias do produto
+                        for category in produto['categories']:
+                            # Recuperando a categoria pai dessa categoria do produto
+                            cat = functions.api_get('/api-v1/categories?id=%s' % category['id'])
+
+                            # Adicionando a categoria pai na lista de categorias do produto
+                            if cat['parent_id'] not in categories and int(cat['parent_id']) > 0:
+                                categories.append(int(cat['parent_id']))
+
+                            # Adicionando a categoria na listagem para não atualizar errado
+                            if category['id'] not in categories:
+                                categories.append(int(category['id']))
+
+                        # Atualizando as categorias do produto
+                        params = {"product": {"sku": "%s" % produto['sku'], "categories": categories}}
+
+                        print("Atualizando as categorias do produto SKU[%s]" % produto['sku'])
+
+                        # Chamada da API para atualizar o produto na Xtech inserindo suas categorias atualizadas
+                        response = functions.api_put("/api-v1/products?id=%s" % produto['id'], params)
+                        sleep(2)
+
+                    except:
+                        print("Ocorreu um erro ao tentar atualizar produto: %s" % sys.exc_info()[0])
+                        break
+
+                self.page += 1
+
+            except:
+                print("Ocorreu um erro ao tentar recuperar a lista de produtos: %s" % sys.exc_info()[0])
+        
 xtech = Xtech()
-xtech.update_from_api()
-#xtech.update_from_api_base64()
+xtech.update_products_categories()
+#xtech.update_from_api()
 #xtech.get_products_from_api()
 #xtech.update_from_csv()
