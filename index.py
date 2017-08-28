@@ -246,9 +246,51 @@ class Xtech:
 
             except:
                 print("Ocorreu um erro ao tentar recuperar a lista de produtos: %s" % sys.exc_info()[0])
+
+    def update_products_promocao(self):
+    
+        # Aqui eu listo todos os produtos obtidos na Xtech
+        print("Processo iniciado em %s/%s/%s as %s:%s:%s" % (self.now.day, self.now.month, self.now.year, self.now.hour,
+                                                             self.now.minute, self.now.second))
+    
+        while self.page <= self.pages:
+            try:
+                print("Atualizando os %s produtos da página %s ..." % (settings.db_per_page, self.page))
+                # Chamada da API da Xtech para listar os produtos da página atual
+                url = "/api-v1/products?per_page=%s&page=%s" % (settings.db_per_page, self.page)
+                produtos = functions.api_get(url)
+            
+                for produto in produtos:
+                    try:
+                        categories = []
+                    
+                        # Listando as categorias do produto
+                        for category in produto['categories']:
+                        
+                            # Adicionando a categoria na listagem para não atualizar errado
+                            if category['id'] not in categories:
+                                categories.append(int(category['id']))
+                    
+                        # Atualizando as categorias do produto
+                        params = {"product": {"sku": "%s" % produto['sku'], "categories": categories}}
+                    
+                        print("Atualizando as categorias do produto SKU[%s]" % produto['sku'])
+                    
+                        # Chamada da API para atualizar o produto na Xtech inserindo suas categorias atualizadas
+                        response = functions.api_put("/api-v1/products?id=%s" % produto['id'], params)
+                        sleep(2)
+                
+                    except:
+                        print("Ocorreu um erro ao tentar atualizar produto: %s" % sys.exc_info()[0])
+                        break
+            
+                self.page += 1
+        
+            except:
+                print("Ocorreu um erro ao tentar recuperar a lista de produtos: %s" % sys.exc_info()[0])
         
 xtech = Xtech()
-xtech.update_products_categories()
+xtech.update_products_promocao()
 #xtech.update_from_api()
 #xtech.get_products_from_api()
 #xtech.update_from_csv()
