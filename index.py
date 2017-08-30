@@ -270,6 +270,9 @@ class Xtech:
                             # Adicionando a categoria na listagem para não atualizar errado
                             if category['id'] not in categories:
                                 categories.append(int(category['id']))
+                                
+                        if float(produto['saleprice']) > 0:
+                            categories.append(524148)
                     
                         # Atualizando as categorias do produto
                         params = {"product": {"sku": "%s" % produto['sku'], "categories": categories}}
